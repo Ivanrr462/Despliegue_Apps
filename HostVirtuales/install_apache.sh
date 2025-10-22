@@ -29,7 +29,7 @@ cat > /var/www/primero/index.html << EOF
     <html>
         <body>
             <h1>
-                PRIMERO
+                Ivan
             </h1>
         </body>
     </html>
@@ -39,7 +39,7 @@ cat > /var/www/segundo/index.html << EOF
     <html>
         <body>
             <h1>
-                SEGUNDO
+                Ivan Rios Raya
             </h1>
         </body>
     </html>
