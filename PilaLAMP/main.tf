@@ -2,53 +2,79 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.0"
+      version = "~> 6.18.0"
     }
   }
-
-  required_version = ">= 1.2"
 }
 
 provider "aws" {
   region = "us-east-1"
 }
 
-resource "aws_security_group" "pilaLAMP" {
-  name        = "pilaLAMP"
-  description = "Permitir HTTP y SSH"
-
-  ingress {
-    description = "Allow SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Allow HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "pilaLAMP"
-  }
+// Creacion de la red de seguridad como dice el profe
+resource "aws_security_group" "ssh" {
+    name = "ssh-demo-lamp"
+    description = "Allow SSH traffic"
 }
 
+resource "aws_vpc_security_group_ingress_rule" "ssh" {
+    cidr_ipv4 = "0.0.0.0/0"
+    to_port = 22
+    from_port = 22
+    ip_protocol = "TCP"
+    security_group_id = aws_security_group.ssh.id  
+}
+
+resource "aws_security_group" "http" {
+    name = "http-demo-lamp"
+    description = "Allow Http traffic"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "http" {
+    cidr_ipv4 = "0.0.0.0/0"
+    to_port = 80
+    from_port = 80
+    ip_protocol = "TCP"
+    security_group_id = aws_security_group.http.id  
+}
+
+resource "aws_security_group" "all" {
+    name = "all-demo-lamp"
+    description = "Allow All Egress traffic"
+}
+
+resource "aws_vpc_security_group_egress_rule" "all" {
+    cidr_ipv4 = "0.0.0.0/0"
+    ip_protocol = "-1"
+    security_group_id = aws_security_group.all.id  
+}
+
+resource "aws_security_group" "db" {
+    name = "db-demo-lamp"
+    description = "Allow DB ingress traffic"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "db" {
+    referenced_security_group_id = aws_security_group.wsmysql.id
+    to_port = 3306
+    from_port = 3306
+    ip_protocol = "TCP"
+    security_group_id = aws_security_group.db.id  
+}
+
+
+resource "aws_security_group" "wsmysql" {
+    name = "wsmysql-demo-lamp"
+    description = "Identify Web Server connect to db"
+}
+
+// Creacion de las instancias
 resource "aws_instance" "ServidorWeb" {
   ami           = "ami-0bbdd8c17ed981ef9"
   instance_type = "t2.small"
+  // Nombre del par de claves
   key_name      = "demo"
+  vpc_security_group_ids = [aws_security_group.ssh.id, aws_security_group.all.id, aws_security_group.http.id, aws_security_group.wsmysql.id]
   tags = {
     Name = "ServidorWeb"
   }
@@ -60,6 +86,7 @@ resource "aws_instance" "DBServer" {
   ami           = "ami-0bbdd8c17ed981ef9"
   instance_type = "t2.small"
   key_name      = "demo"
+  vpc_security_group_ids = [aws_security_group.ssh.id, aws_security_group.all.id, aws_security_group.db.id]
   tags = {
     Name = "DBServer"
   }
