@@ -10,7 +10,7 @@ add-apt-repository -y ppa:ondrej/php
 apt-get update -y
 
 # Instalar Apache y PHP 8.1
-apt-get install -y apache2 php8.1 libapache2-mod-php8.1 openssh-server
+apt-get install -y php8.1 libapache2-mod-php8.1 openssh-server
 
 # Deshabilitar módulo autoindex
 a2dismod autoindex || true
@@ -22,6 +22,8 @@ cat > /etc/apache2/sites-available/primero.conf << EOF
 EOF
 
 a2ensite primero
+a2dissite 000-default.conf 
+a2dissite default-ssl.conf
 a2enmod php8.1 || true
 mkdir /var/www/primero
 systemctl reload apache2

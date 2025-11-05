@@ -20,9 +20,9 @@ resource "aws_security_group" "ssh" {
 resource "aws_vpc_security_group_ingress_rule" "ssh" {
   security_group_id = aws_security_group.ssh.id
   cidr_ipv4 = "0.0.0.0/0"
-  from_port = 20
-  to_port = 20
-  ip_protocol = "tcp"
+  from_port = 22
+  to_port = 22
+  ip_protocol = "TCP"
 }
 
 resource "aws_security_group" "http" {
@@ -35,7 +35,7 @@ resource "aws_vpc_security_group_ingress_rule" "http" {
   cidr_ipv4 = "0.0.0.0/0"
   from_port = 80
   to_port = 80
-  ip_protocol = "tcp"
+  ip_protocol = "TCP"
 }
 
 resource "aws_security_group" "all" {
@@ -53,16 +53,18 @@ resource "aws_vpc_security_group_egress_rule" "all" {
 resource "aws_instance" "Bastion1" {
   ami = "ami-0bbdd8c17ed981ef9"
   instance_type = "t2.small"
+  key_name = "demo"
   vpc_security_group_ids = [aws_security_group.all.id, aws_security_group.http.id, aws_security_group.ssh.id]
   tags = {
     Name = "Bastion"
   }
   user_data = file("bastion_apache.sh")
+  user_data_replace_on_change = true
 }
 
-# Elastic IP (VPC) y asociación a la instancia bastion
+// Elastic IP (VPC) y asociación a la instancia bastion
 resource "aws_eip" "bastion_eip" {
-  instance = aws_instance.bastion.id
+  instance = aws_instance.Bastion1.id
   tags = {
     Name = "bastion-eip"
   }

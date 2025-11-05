@@ -15,11 +15,13 @@ CREATE TABLE usuario(
 );
 GRANT ALL PRIVILEGES ON webapp.* TO 'webuser'@'%';
 FLUSH PRIVILEGES;
+EOF
 
+# Comando sed funcional para conectarse desde el web al mysql
 CNF=/etc/mysql/mysql.conf.d/mysqld.cnf
 sed -i "s/^bind-address.*/bind-address = 0.0.0.0/" $CNF || true
 systemctl restart mysql
 
-EOF
-
 # Borrar lineas 19,20,21 si no funciona
+
+# mysql -h <IP_o_hostname_remoto> -P 3306 -u <usuario> -p -> comando para entrar a mysql desde el servidor web
