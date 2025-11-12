@@ -44,7 +44,7 @@ resource "aws_route53_record" "dns" {
     name = "ivanrios.com"
     type = "A"
     ttl = 300
-    records = 
+    records = [ aws_instance.webserver.private_ip ]
 }
 
 resource "aws_instance" "webserver" {
