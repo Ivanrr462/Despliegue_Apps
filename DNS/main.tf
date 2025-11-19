@@ -8,54 +8,87 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region = var.region
 }
 
-resource "aws_security_group" "ssh" {
-    name = "ssh-demo-dns"
-    description = "Allow SSH traffic"
-}
-
-resource "aws_vpc_security_group_ingress_rule" "ssh" {
-    cidr_ipv4 = "0.0.0.0/0"
-    to_port = 22
-    from_port = 22
-    ip_protocol = "TCP"
-    security_group_id = aws_security_group.ssh.id  
-}
-
-resource "aws_security_group" "all" {
-    name = "all-demo-dns"
-    description = "Allow All Egress traffic"
+resource "aws_security_group" "webServer" {
+    description = "Allow WebServer traffic"
 }
 
 resource "aws_vpc_security_group_egress_rule" "all" {
-    cidr_ipv4 = "0.0.0.0/0"
-    ip_protocol = "-1"
-    security_group_id = aws_security_group.all.id  
+  ip_protocol = "-1"
+  cidr_ipv4 = "0.0.0.0/0"
+  security_group_id = aws_security_group.webServer.id
 }
 
-resource "aws_route53_zone" "dns" {
-    name = "ivanrios.com"
+resource "aws_vpc_security_group_ingress_rule" "ssh" {
+  ip_protocol = "tcp"
+  from_port = 22
+  to_port = 22
+  cidr_ipv4 = "0.0.0.0/0"
+  security_group_id = aws_security_group.webServer.id
 }
 
-resource "aws_route53_record" "dns" {
-    zone_id = aws_route53_zone.dns.id
-    name = "ivanrios.com"
-    type = "A"
-    ttl = 300
-    records = [ aws_instance.webserver.private_ip ]
+resource "aws_vpc_security_group_ingress_rule" "http" {
+  ip_protocol = "tcp"
+  from_port = 80
+  to_port = 80
+  cidr_ipv4 = "0.0.0.0/0"
+  security_group_id = aws_security_group.webServer.id
 }
+
 
 resource "aws_instance" "webserver" {
-  ami = "ami-0bbdd8c17ed981ef9"
-  instance_type = "t2.small"
-  key_name = "vockey"
-  vpc_security_group_ids = [aws_security_group.all.id, aws_security_group.ssh.id]
+  ami = data.aws_ami.ubuntu.id
+  instance_type = var.instance_type
+  key_name = var.key_name
+  vpc_security_group_ids = [ aws_security_group.webServer.id ]
   tags = {
     Name = "servidorWeb"
   }
   user_data = file("user_data.sh")
   user_data_replace_on_change = true
+}
+
+resource "aws_instance" "bastion" {
+  ami = data.aws_ami.ubuntu.id
+  instance_type = var.instance_type
+  key_name = var.key_name
+  vpc_security_group_ids = [ aws_security_group.webServer.id ]
+  tags = {
+    Name = "Bastion"
+  }
+}
+
+resource "aws_route53_zone" "default" {
+  name = var.domain
+  vpc {
+    vpc_id = data.aws_vpc.default_vpc.id
+    vpc_region = var.region
+  }
+}
+
+resource "aws_route53_record" "webserver" {
+  type = "A"
+  name = var.domain
+  zone_id = aws_route53_zone.default.zone_id
+  ttl = 3600
+  records = [ aws_instance.webserver.private_ip ]
+}
+
+resource "aws_route53_record" "webserver_alias" {
+  type = "CNAME"
+  name = "www.${var.domain}"
+  zone_id = aws_route53_zone.default.zone_id
+  ttl = 3600
+  records = [ aws_route53_record.webserver.name ]
+}
+
+resource "aws_route53_record" "bastion" {
+  type = "A"
+  name = "bastion.${var.domain}"
+  zone_id = aws_route53_zone.default.zone_id
+  ttl = 3600
+  records = [ aws_instance.bastion.private_ip ]
 }
 
