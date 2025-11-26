@@ -1,0 +1,23 @@
+#! /bin/bash -xe
+exec > /tmp/userdata.log 2>&1
+
+apt update
+apt install apache2 -y
+
+a2enmod proxy
+a2enmod proxy_http
+
+cat > /etc/apache2/sites-available/transparente.conf << EOF
+<VirtualHost *:80>
+    ServerName ${nombre_dominio}
+    ProxyPass "/" "http://${DNS}/"
+    ProxyPassReverse "/" "http://${DNS}/"
+</VirtualHost>
+EOF
+
+rm -f /var/www/html/index.html
+
+a2dissite 000-default
+a2ensite transparente
+
+systemctl restart apache2

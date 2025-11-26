@@ -27,14 +27,14 @@ resource "aws_vpc_security_group_ingress_rule" "ssh_ingress" {
 
 // SECURITY GROUP FRONTEND 
 
-resource "aws_security_group" "frontend" {
-  name        = "frontend-sg"
+resource "aws_security_group" "Frontend" {
+  name        = "FrontendSG"
   description = "Security Group for FrontEnd"
 }
 
 # SSH desde cualquier lado
 resource "aws_vpc_security_group_ingress_rule" "frontend_ssh" {
-  security_group_id = aws_security_group.frontend_sg.id
+  security_group_id = aws_security_group.Frontend.id
   from_port         = 22
   to_port           = 22
   ip_protocol       = "tcp"
@@ -43,7 +43,7 @@ resource "aws_vpc_security_group_ingress_rule" "frontend_ssh" {
 
 # HTTP desde cualquier lado
 resource "aws_vpc_security_group_ingress_rule" "frontend_http" {
-  security_group_id = aws_security_group.frontend_sg.id
+  security_group_id = aws_security_group.Frontend.id
   from_port         = 80
   to_port           = 80
   ip_protocol       = "tcp"
@@ -52,7 +52,7 @@ resource "aws_vpc_security_group_ingress_rule" "frontend_http" {
 
 # Egress libre
 resource "aws_vpc_security_group_egress_rule" "frontend_egress" {
-  security_group_id = aws_security_group.frontend_sg.id
+  security_group_id = aws_security_group.Frontend.id
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
 }
@@ -60,14 +60,14 @@ resource "aws_vpc_security_group_egress_rule" "frontend_egress" {
 
 // SECURITY GROUP BACKEND 
 
-resource "aws_security_group" "backend" {
-  name        = "backend-sg"
+resource "aws_security_group" "Backend" {
+  name        = "BackendSG"
   description = "Security Group for BackEnd"
 }
 
 # SSH desde cualquier lado
 resource "aws_vpc_security_group_ingress_rule" "backend_ssh" {
-  security_group_id = aws_security_group.backend_sg.id
+  security_group_id = aws_security_group.Backend.id
   from_port         = 22
   to_port           = 22
   ip_protocol       = "tcp"
@@ -76,8 +76,8 @@ resource "aws_vpc_security_group_ingress_rule" "backend_ssh" {
 
 # HTTP SOLO desde FrontEnd
 resource "aws_vpc_security_group_ingress_rule" "backend_http_from_frontend" {
-  security_group_id            = aws_security_group.backend_sg.id
-  referenced_security_group_id = aws_security_group.frontend_sg.id
+  security_group_id            = aws_security_group.Backend.id
+  referenced_security_group_id = aws_security_group.Frontend.id
   from_port                    = 80
   to_port                      = 80
   ip_protocol                  = "tcp"
@@ -85,7 +85,7 @@ resource "aws_vpc_security_group_ingress_rule" "backend_http_from_frontend" {
 
 # Egress libre
 resource "aws_vpc_security_group_egress_rule" "backend_egress" {
-  security_group_id = aws_security_group.backend_sg.id
+  security_group_id = aws_security_group.Backend.id
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
 }
@@ -97,8 +97,10 @@ resource "aws_instance" "Frontend" {
   tags = {
     Name = "FrontEnd"
   }
-  vpc_security_group_ids = [ aws_security_group.frontend.id ]
-  user_data                   = file("frontend_data.sh")
+  vpc_security_group_ids = [ aws_security_group.Frontend.id ]
+  // user_data                   = file("frontend_data.sh")
+  // Uso de Templates
+  user_data = templatefile("frontend_data.tftpl", {DNS=aws_instance.Backend.private_ip})
   user_data_replace_on_change = true
 }
 
@@ -109,7 +111,7 @@ resource "aws_instance" "Backend" {
   tags = {
     Name = "BackEnd"
   }
-  vpc_security_group_ids = [ aws_security_group.backend.id ]
+  vpc_security_group_ids = [ aws_security_group.Backend.id ]
   user_data                   = file("backend_data.sh")
   user_data_replace_on_change = true
 }
