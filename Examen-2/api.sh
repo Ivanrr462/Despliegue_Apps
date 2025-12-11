@@ -1,0 +1,33 @@
+#!/bin/bash -xe 
+exec > /tmp/userdata.log 2>&1
+
+apt upgrade -y
+apt update
+apt install apache2 -y
+apt install php libapache2-mod-php -y
+
+hostnamectl set-hostname Api
+
+a2enmod proxy_http
+
+cat > /etc/apache2/sites-available/api.conf << EOF
+<VirtualHost *:80>
+    ProxyPass "/login/" "http://${login_dns}/"
+    ProxyPassReverse "/login/" "http://${login_dns}/"
+
+    DocumentRoot /var/www/api
+</VirtualHost>
+EOF
+
+mkdir /var/www/api
+
+cat > /var/www/api/index.php << EOF
+    <?php
+        phpinfo();
+    ?>
+EOF
+
+a2ensite api
+a2dissite 000-default.conf 
+
+systemctl reload apache2

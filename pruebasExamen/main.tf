@@ -152,6 +152,6 @@ resource "aws_route53_record" "frontend_alias" {
   name = "www.fe.${var.domain}"
   zone_id = aws_route53_zone.default.zone_id
   ttl = 3600
-  records = [ aws_route53_record.frontend_record.name ]
+  records = [ aws_route53_record.frontend_record.name ] // Referencia al name del frontend_record
 }
 
