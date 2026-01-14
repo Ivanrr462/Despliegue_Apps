@@ -1,0 +1,27 @@
+name: Test Prueba
+on:
+  push:
+    branches:
+      - main
+jobs:
+  probar:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Copiar código en el contenedor
+        uses: actions/checkout@v6
+
+      - name: Instalar el jdk
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      
+      - name: Instalar Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Darle permisos de ejecucion a gradle
+        run: chmod +x gradlew
+
+      - name: Ejecutar los tests
+        run: ./gradlew test
+          
