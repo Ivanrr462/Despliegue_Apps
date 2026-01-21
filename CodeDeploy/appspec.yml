@@ -1,0 +1,6 @@
+## Este fichero tiene que estar en la raiz del proyecto y llamarse asi
+
+version: 0.0
+os: linux
+files: 
+  - source: .
