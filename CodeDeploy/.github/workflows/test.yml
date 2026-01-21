@@ -8,4 +8,11 @@ jobs:
     test:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v6
+            - name: Checkout repository
+              uses: actions/checkout@v6
+
+            - name: Get composer
+              uses: php-actions/composer@v6
+
+            - name: Ejecutar Script
+              run: ./vendor/bin/phpunit tests/EmailTest.php
